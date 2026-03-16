@@ -4,14 +4,14 @@ End-to-end analytics platform with Airflow ETL, DuckDB data mart, Superset dashb
 
 ## Table of Contents
 
-- [1. Project Overview](#project-overview)
-- [2. Architecture](#architecture)
-- [3. Project Structure](#project-structure)
-- [4. Airflow Pipeline](#airflow-pipeline)
-- [5. Data Mart Design](#data-mart-design)
-- [6. Superset Dashboard](#superset-dashboard)
-- [7. AI Data Copilot](#ai-data-copilot)
-- [8. Run the Project](#run-the-project)
+- [1. Project Overview](#1-project-overview)
+- [2. Architecture](#2-architecture)
+- [3. Project Structure](#3-project-structure)
+- [4. Airflow Pipeline](#4-airflow-pipeline)
+- [5. Data Mart Design](#5-data-mart-design)
+- [6. Superset Dashboard](#6-superset-dashboard)
+- [7. AI Data Copilot](#7-ai-data-copilot)
+- [8. Run the Project](#8-run-the-project)
 
 ## 1. Project Overview
 
