@@ -1,0 +1,37 @@
+{
+  "tables": [
+    {
+      "name": "orders",
+      "description": "구매 완료 주문 테이블",
+      "columns": [
+        {"name": "order_id", "type": "INTEGER", "description": "주문 ID"},
+        {"name": "user_id", "type": "INTEGER", "description": "사용자 ID"},
+        {"name": "product_id", "type": "INTEGER", "description": "상품 ID"},
+        {"name": "order_time", "type": "TIMESTAMP", "description": "주문 시각"},
+        {"name": "amount", "type": "INTEGER", "description": "주문 금액"},
+        {"name": "category", "type": "VARCHAR", "description": "상품 카테고리"}
+      ]
+    },
+    {
+      "name": "events",
+      "description": "사용자 행동 이벤트 로그",
+      "columns": [
+        {"name": "event_id", "type": "INTEGER", "description": "이벤트 ID"},
+        {"name": "user_id", "type": "INTEGER", "description": "사용자 ID"},
+        {"name": "product_id", "type": "INTEGER", "description": "상품 ID"},
+        {"name": "event_type", "type": "VARCHAR", "description": "행동 유형(view, click, add_to_cart, purchase)"},
+        {"name": "event_time", "type": "TIMESTAMP", "description": "이벤트 발생 시각"}
+      ]
+    },
+    {
+      "name": "mart_daily_revenue",
+      "description": "일자별 카테고리 매출 마트",
+      "columns": [
+        {"name": "order_date", "type": "DATE", "description": "주문 일자"},
+        {"name": "category", "type": "VARCHAR", "description": "카테고리"},
+        {"name": "order_count", "type": "INTEGER", "description": "주문 수"},
+        {"name": "revenue", "type": "INTEGER", "description": "매출"}
+      ]
+    }
+  ]
+}

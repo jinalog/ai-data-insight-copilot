@@ -1,0 +1,22 @@
+{
+  "kpis": [
+    {
+      "name": "revenue",
+      "definition": "특정 기간 동안 발생한 총 주문 금액의 합",
+      "sql_hint": "SUM(amount)",
+      "source_table": "orders"
+    },
+    {
+      "name": "purchase_count",
+      "definition": "특정 기간 동안 발생한 구매 건수",
+      "sql_hint": "COUNT(*)",
+      "source_table": "orders"
+    },
+    {
+      "name": "conversion_rate",
+      "definition": "구매 수 / 조회 수",
+      "sql_hint": "purchases / views",
+      "source_table": "events"
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "examples": [
+    {
+      "name": "daily_revenue_trend",
+      "description": "일자별 매출 추이",
+      "question_examples": [
+        "매출 추이",
+        "일자별 매출",
+        "최근 7일 매출"
+      ],
+      "sql": "SELECT CAST(order_time AS DATE) AS order_date, SUM(amount) AS revenue FROM orders GROUP BY order_date ORDER BY order_date;"
+    },
+    {
+      "name": "purchase_count_trend",
+      "description": "일자별 구매 건수 추이",
+      "question_examples": [
+        "구매 건수",
+        "최근 14일 구매 건수",
+        "일자별 구매"
+      ],
+      "sql": "SELECT CAST(order_time AS DATE) AS order_date, COUNT(*) AS purchase_count FROM orders GROUP BY order_date ORDER BY order_date;"
+    },
+    {
+      "name": "category_revenue_top",
+      "description": "카테고리별 매출 상위",
+      "question_examples": [
+        "카테고리 매출",
+        "매출 높은 카테고리"
+      ],
+      "sql": "SELECT category, SUM(amount) AS total_revenue FROM orders GROUP BY category ORDER BY total_revenue DESC LIMIT 5;"
+    }
+  ]
+}
