@@ -1,862 +1,378 @@
-# AI Data Insight Copilot
+# 🤖 AI Data Insight Copilot
 
-End-to-end analytics platform with Airflow ETL, DuckDB data mart, Superset dashboards, and an LLM-powered data copilot.
+AI Data Insight Copilot is an AI-native analytics system that allows non-technical users to query data using natural language and receive business insights instantly.
 
-## Table of Contents
-
-- [1. Project Overview](#1-project-overview)
-- [2. Architecture](#2-architecture)
-- [3. Project Structure](#3-project-structure)
-- [4. Airflow Pipeline](#4-airflow-pipeline)
-- [5. Data Mart Design](#5-data-mart-design)
-- [6. Superset Dashboard](#6-superset-dashboard)
-- [7. AI Data Copilot](#7-ai-data-copilot)
-- [8. Run the Project](#8-run-the-project)
-
-## 1. Project Overview
-
-AI Data Insight Copilot is an end-to-end analytics platform that integrates a data pipeline, analytical data mart, BI dashboards, and an AI-powered data copilot.
-
-The system generates synthetic e-commerce data and processes it through an automated Airflow pipeline. The pipeline performs synthetic data generation, data quality validation, and builds a DuckDB-based analytical data mart optimized for analytical queries.
-
-The data mart is used by two main components:
-
-- **Superset BI Dashboard** for KPI monitoring and exploratory analysis
-- **AI Data Copilot** that enables natural-language analytics using LLM-generated SQL queries
-
-Through this architecture, users can explore data both through traditional BI dashboards and through conversational analytics powered by large language models.
-
-This project demonstrates a practical architecture for integrating data engineering pipelines, BI dashboards, and LLM-powered analytics in a unified analytics platform.
-
-### Key Components
-
-- **Airflow Pipeline**  
-  Automates synthetic data generation, data quality validation, and data mart construction.
-
-- **DuckDB Data Mart**  
-  Stores analytical tables and KPI views optimized for BI queries.
-
-- **Superset Dashboard**  
-  Provides interactive KPI visualizations such as revenue trends, order counts, and category performance.
-
-- **AI Data Copilot**  
-  Allows users to query data using natural language, where an LLM converts questions into SQL queries executed on DuckDB.
-
-## 2. Architecture
-
-The system is designed as an end-to-end analytics platform that integrates a data pipeline, analytical data mart, BI dashboards, and an AI-powered data copilot.
-
-Synthetic e-commerce data is generated and processed through an automated Airflow pipeline. After passing data quality validation, the data is stored in a DuckDB-based analytical data mart.  
-The data mart is then used by both a BI dashboard (Superset) and an AI-driven natural language analytics interface (AI Data Copilot).
-
-### System Architecture
-```
-            +-------------------------------+
-            |   Synthetic Data Generator    |
-            | generate_synthetic_data.py    |
-            +---------------+---------------+
-                            |
-                            v
-            +-------------------------------+
-            |          Airflow DAG          |
-            |      daily_data_pipeline      |
-            |                               |
-            | 1. generate_synthetic_data    |
-            | 2. data_quality_check         |
-            | 3. build_duckdb               |
-            +---------------+---------------+
-                            |
-                            v
-            +-------------------------------+
-            |         DuckDB Data Mart      |
-            |                               |
-            | tables                        |
-            |  - users                      |
-            |  - products                   |
-            |  - events                     |
-            |  - orders                     |
-            |                               |
-            | views                         |
-            |  - mart_daily_revenue         |
-            |  - mart_funnel_daily          |
-            +---------------+---------------+
-                            |
-           +----------------+----------------+
-           |                                 |
-           v                                 v
-
- +-----------------------+       +---------------------------+
- |    Superset Dashboard |       |       AI Data Copilot     |
- |                       |       |                           |
- | KPI Visualization     |       | Natural Language Query    |
- |                       |       |                           |
- | • Revenue Trend       |       | Planner → SQL Agent       |
- | • Total Orders        |       | → DuckDB Query            |
- | • Unique Users        |       | → Analyst → Insights      |
- | • Category Revenue    |       |                           |
- +-----------------------+       +---------------------------+
- ```
-
-### Data Flow
-
-1. **Synthetic Data Generation**  
-   Test data simulating e-commerce user activity is generated.
-
-2. **Airflow Pipeline**  
-   Airflow orchestrates the pipeline consisting of:
-   - synthetic data generation
-   - data quality validation
-   - DuckDB data mart construction
-
-3. **DuckDB Data Mart**  
-   Analytical tables and KPI views are created to support BI queries.
-
-4. **Superset Dashboard**  
-   Superset visualizes key business metrics such as revenue trends and order statistics.
-
-5. **AI Data Copilot**  
-   Users can query data using natural language.  
-   The LLM converts user questions into SQL queries that are executed against DuckDB.
-
-## 3. Project Structure
-```
-ai-data-insight-copilot/
-│
-├── Infrastructure & Config
-│ ├── .env # Environment variables (e.g., API keys)
-│ ├── .env.example # Example environment configuration
-│ ├── .gitignore # Git ignore rules
-│ ├── docker-compose.airflow.yml # Docker Compose configuration for Airflow
-│ └── requirements.txt # Python dependency list
-│
-├── airflow/ (Workflow Orchestration)
-│ ├── dags/
-│ │ └── daily_data_pipeline.py # Airflow DAG (generate → quality check → mart build)
-│ ├── logs/ # Airflow execution logs
-│ └── plugins/ # Custom Airflow plugins (currently unused)
-│
-├── src/copilot/ (AI Data Copilot Core)
-│ ├── agents/
-│ │ ├── planner.py # Analyze user query and identify intent/metrics
-│ │ ├── sql_agent.py # Convert natural language into SQL
-│ │ ├── analyst.py # Summarize query results in natural language
-│ │ ├── insight_engine.py # Generate structured insights from query results
-│ │ ├── sql_normalizer.py # Normalize LLM-generated SQL to DuckDB syntax
-│ │ └── validator.py # Validate SQL safety and allowed tables
-│ │
-│ ├── pipeline/
-│ │ └── orchestrator.py # Orchestrates planner → retrieval → SQL → analysis
-│ │
-│ ├── retrieval/
-│ │ └── retriever.py # Retrieve metadata and examples (RAG-style context)
-│ │
-│ ├── datastore/
-│ │ └── duckdb_client.py # DuckDB connection and query execution
-│ │
-│ ├── context/
-│ │ └── schema_registry.py # Schema metadata management for prompt context
-│ │
-│ ├── evaluation/
-│ │ └── evaluator.py # Evaluate query results and store evaluation logs
-│ │
-│ ├── interfaces/
-│ │ ├── api/
-│ │ │ ├── app.py # FastAPI server entry point
-│ │ │ └── schemas.py # API request/response schemas (Pydantic)
-│ │ │
-│ │ └── web/
-│ │ └── streamlit_app.py # Streamlit-based Data Copilot interface
-│ │
-│ └── main.py # CLI entry point for the copilot
-│
-├── data/ (Data Storage)
-│ ├── raw/ # Raw CSV data (users, products, events, orders)
-│ └── processed/
-│ └── insight.duckdb # DuckDB analytical database (Data Mart)
-│
-├── metadata/ (Business Knowledge)
-│ ├── business/
-│ │ ├── kpi_definitions.json # KPI definitions and business metrics
-│ │ └── sql_examples.json # Few-shot SQL examples for query generation
-│ │
-│ └── schema/
-│ └── tables.json # Table and column descriptions
-│
-├── scripts/ (ETL & Utilities)
-│ ├── build_duckdb.py # Build DuckDB mart from raw CSV data
-│ ├── data_quality_check.py # Data validation checks
-│ ├── generate_synthetic_data.py # Synthetic dataset generator
-│ ├── run.ps1 # Run copilot via CLI
-│ ├── run_api.ps1 # Run FastAPI server
-│ └── run_ui.ps1 # Run Streamlit UI
-│
-└── outputs/
-└── eval_results/ # Evaluation result logs (JSON)
-```
-
-This structure separates infrastructure, data pipelines, analytics storage, and the AI copilot components to clearly reflect the architecture of the analytics platform.
-
-## 4. Airflow Pipeline
-
-The project uses **Apache Airflow** to orchestrate the end-to-end ETL workflow for the analytics platform.
-
-The DAG automates the following steps:
-
-1. **generate_synthetic_data**  
-   Generates synthetic e-commerce datasets including users, products, events, and orders.
-
-2. **data_quality_check**  
-   Validates the generated raw data before further processing.  
-   Example checks include:
-   - null value validation
-   - valid event type validation
-   - positive order amount validation
-
-3. **build_duckdb**  
-   Loads raw CSV data into DuckDB and builds the analytical data mart, including KPI-oriented views such as:
-   - `mart_daily_revenue`
-   - `mart_funnel_daily`
-
-### DAG Flow
-```
-generate_synthetic_data
-↓
-data_quality_check
-↓
-build_duckdb
-```
-
-### DAG Description
-
-- **DAG ID**: `daily_data_pipeline`
-- **Schedule**: `@daily`
-- **Executor**: `LocalExecutor`
-- **Storage**: DuckDB-based analytical data mart
-
-### Pipeline Purpose
-
-This workflow demonstrates how a modern analytics platform can automate:
-
-- synthetic data generation
-- raw data validation
-- analytical mart construction
-
-By integrating Airflow with DuckDB, the project provides a lightweight but practical example of a batch-oriented analytics pipeline.
-
-### DAG Execution Example
-
-![Airflow DAG](docs/images/AirflowDag.png)
-
-## 5. Data Mart Design
-
-The project uses **DuckDB** as an analytical data mart to support both BI dashboards and natural-language analytics.
-
-The data mart is built from raw synthetic CSV files generated through the ETL pipeline and is stored as:
-
-```text
-data/processed/insight.duckdb
-```
+> Natural language 기반으로 SQL 생성부터 인사이트 도출까지 자동화한 AI 데이터 분석 Copilot 시스템
 
 ---
 
-### Raw Tables
+## Key Highlights
 
-The following raw tables are created in DuckDB:
-
-- `users`
-- `products`
-- `events`
-- `orders`
-
-These tables preserve the original event and transaction-level data required for detailed analysis.
+- Natural Language → SQL → Insight end-to-end automation
+- Multi-stage LLM pipeline with validation & retry
+- Metadata-driven design to reduce hallucination
+- Production-oriented architecture (FastAPI, DuckDB, Airflow)
 
 ---
 
-#### users
+## 1. Motivation
 
-Stores user-level profile and signup information.
-
-| Column | Type | Description |
-|------|------|-------------|
-| user_id | BIGINT | Unique user identifier |
-| country | VARCHAR | User country |
-| device_type | VARCHAR | Device type used by the user |
-| signup_at | TIMESTAMP | User signup timestamp |
+실제 업무에서 반복적인 데이터 조회 요청과 SQL 작성 작업을 경험하며 비개발자가 데이터에 접근하기 어려운 구조를 개선하고자 본 프로젝트를 시작했습니다.
 
 ---
 
-#### products
+## 2. Problem Definition
 
-Stores product-level metadata.
+데이터 분석 과정에서 반복적으로 발생하는 문제는 다음과 같습니다.
 
-| Column | Type | Description |
-|------|------|-------------|
-| product_id | BIGINT | Unique product identifier |
-| product_name | VARCHAR | Product name |
-| category | VARCHAR | Product category |
-| price | BIGINT | Product price |
+- SQL 작성에 대한 높은 진입 장벽
+- 데이터 스키마를 모르면 분석 자체가 어려움
+- 동일한 KPI를 반복적으로 계산하는 비효율
+- 분석 결과를 비즈니스 관점으로 해석해야 하는 추가 작업
 
----
+특히 운영 환경에서는 비개발자(운영자, PM 등)가 데이터 조회를 위해 개발자에게 의존하는 문제가 발생합니다.
 
-#### events
-
-Stores user activity events.
-
-| Column | Type | Description |
-|------|------|-------------|
-| event_id | BIGINT | Unique event identifier |
-| user_id | BIGINT | User identifier |
-| product_id | BIGINT | Product identifier |
-| event_type | VARCHAR | Event type (`view`, `click`, `add_to_cart`, `purchase`) |
-| event_time | TIMESTAMP | Event timestamp |
+이 프로젝트는 이러한 문제를 해결하기 위해 자연어 기반 데이터 분석 시스템(AI Copilot)을 설계하고 구현하는 것을 목표로 합니다.
 
 ---
 
-#### orders
+## 3. Project Overview
 
-Stores completed purchase transactions.
+**AI Data Insight Copilot**은 자연어로 데이터를 분석할 수 있는 미니 데이터 플랫폼입니다.
 
-| Column | Type | Description |
-|------|------|-------------|
-| order_id | BIGINT | Unique order identifier |
-| user_id | BIGINT | User identifier |
-| product_id | BIGINT | Product identifier |
-| order_time | TIMESTAMP | Order timestamp |
-| amount | BIGINT | Order amount |
-| category | VARCHAR | Product category |
-
----
-
-### Analytical Views
-
-To optimize BI queries and KPI analysis, the project creates aggregated analytical views on top of the raw transaction data.
-
----
-
-#### mart_daily_revenue
-
-Provides daily revenue and order count by category.
-
-| Column | Type | Description |
-|------|------|-------------|
-| order_date | DATE | Aggregated order date |
-| category | VARCHAR | Product category |
-| order_count | BIGINT | Number of orders |
-| revenue | INTEGER | Total revenue |
-
-Used for:
-
-- Daily revenue trend analysis
-- Order count monitoring
-- Category revenue comparison
-
----
-
-#### mart_funnel_daily
-
-Provides daily funnel metrics across the user journey.
-
-| Column | Type | Description |
-|------|------|-------------|
-| event_date | DATE | Aggregated event date |
-| views | BIGINT | Number of view events |
-| clicks | BIGINT | Number of click events |
-| add_to_carts | BIGINT | Number of add-to-cart events |
-| purchases | BIGINT | Number of purchase events |
-
-Used for:
-
-- Conversion funnel analysis
-- User behavior trend monitoring
-- Event-based KPI tracking
-
----
-
-### Design Rationale
-
-The data mart follows a layered analytical design:
-
-**Raw Layer**
-
-Stores event-level and transaction-level source data.
-
-**Mart Layer**
-
-Builds aggregated analytical views optimized for KPI queries and dashboards.
-
-**Consumption Layer**
-
-Supports:
-
-- **Superset BI dashboards**
-- **AI Data Copilot (LLM-based analytics)**
-
-This design keeps the platform lightweight while demonstrating a practical modern analytics architecture.
-
-## 6. Superset Dashboard
-
-Apache Superset is used as the BI visualization layer for exploring business KPIs generated from the DuckDB data mart.
-
-The dashboard connects directly to:
-
-```text
-data/processed/insight.duckdb
-```
-
-and visualizes aggregated analytical views created during the Airflow data pipeline.
-
----
-
-## Dashboard Purpose
-
-The Superset dashboard provides an interactive analytics interface for monitoring business performance and exploring data trends.
-
-It allows users to:
-
-- monitor daily revenue trends
-- analyze product category performance
-- track order volume over time
-- explore key business KPIs
-
-The dashboard serves as the **BI layer on top of the DuckDB analytical data mart**.
-
----
-
-## Data Sources
-
-The dashboard is built on the following analytical view:
-
-| Dataset | Description |
+| Feature | Description |
 |---|---|
-| `mart_daily_revenue` | Daily revenue and order metrics by category |
+| 🗣️ Natural Language → SQL | 자연어 질문을 SQL로 자동 변환 |
+| 🔄 Automated ETL Pipeline | 데이터 생성 → 검증 → 적재 자동화 |
+| 🦆 DuckDB Data Mart | 분석용 경량 데이터 마트 구성 |
+| 💡 Insight Generation | LLM 기반 비즈니스 인사이트 추출 |
+| 🌐 API / Web UI | FastAPI + Streamlit 인터페이스 제공 |
+| ⏱️ Airflow Orchestration | DAG 기반 파이프라인 자동 스케줄링 |
 
-This view is generated by the **Airflow pipeline** during the `build_duckdb` step.
+**사용자 흐름**: 자연어 질문 입력 → SQL 생성 → 데이터 조회 → 인사이트 생성 → 비즈니스 요약 제공
 
----
-
-## Example Visualizations
-
-The dashboard typically includes the following charts.
-
----
-
-### Revenue Trend
-
-Displays revenue trends over time.
-
-Metrics:
-
-- `SUM(revenue)`
-- `SUM(order_count)`
-
-Purpose:
-
-- monitor business growth
-- detect revenue fluctuations
-- analyze seasonal patterns
+**Target Users**: 데이터 분석 요청을 자주 하는 운영자 / PM / 비개발자
 
 ---
 
-### Category Revenue
+## 4. Architecture
 
-Shows revenue distribution by product category.
+본 시스템은 단일 LLM 호출이 아닌, multi-stage agent 기반 파이프라인으로 설계되었습니다.
 
-Metrics:
+```mermaid
+flowchart TD
+    User["👤 User\n(CLI / Streamlit / API)"]
+    Exec["Execution Layer\nrun.ps1 / run_api.ps1 / run_ui.ps1"]
+    API["FastAPI\napp.py"]
 
-- `SUM(revenue)` grouped by `category`
+    subgraph Copilot["AI Copilot  Pipeline"]
+        direction TB
+        Planner --> Retriever --> SchemaRegistry --> SQLAgent
+        SQLAgent --> SQLNormalizer --> Validator --> DuckDB
+        DuckDB --> InsightEngine --> Analyst --> Evaluator
+    end
 
-Purpose:
-
-- identify top performing product categories
-- analyze product demand distribution
-
----
-
-### Order Volume
-
-Displays total order volume across time.
-
-Metrics:
-
-- `SUM(order_count)`
-
-Purpose:
-
-- monitor order activity
-- track business traffic changes
-
----
-
-## Dashboard Data Flow
-
-The dashboard is part of the full analytics pipeline.
-```
-Synthetic Data Generator
-↓
-Airflow DAG
-(generate → quality check → build mart)
-↓
-DuckDB Data Mart
-↓
-Superset Dataset
-↓
-Superset Dashboard
+    User --> Exec --> API --> Planner
 ```
 
 ---
 
-## Running Superset
+## 5. Project Structure
 
-Superset runs inside a Docker container.
-
-Start Superset with:
-```bash
-docker compose up
 ```
-
-Then access the dashboard at: http://localhost:8088
-
-After logging in, connect the DuckDB database and open the dashboard to explore the KPI visualizations.
-
-## 7. AI Data Copilot
-
-AI Data Copilot is a lightweight **LLM-powered analytics assistant** that allows users to query business data using natural language.
-
-Instead of writing SQL manually, users can ask questions such as:
-
-- What was the total revenue yesterday?
-- Show revenue by category
-- How many orders were created last week?
-
-The system automatically converts natural language into SQL queries, executes them on DuckDB, and returns structured analytical insights.
+AI-DATA-INSIGHT-COPILOT/
+├── airflow/
+│   └── dags/
+│       └── daily_data_pipeline.py       # Airflow ETL DAG 정의
+├── data/
+│   ├── processed/                        # 전처리된 데이터
+│   └── raw/                              # 원본 합성 데이터 (CSV)
+├── metadata/
+│   ├── business/
+│   │   ├── kpi_definitions.json          # KPI ↔ SQL 집계 매핑
+│   │   └── sql_examples.json             # 자연어 → SQL few-shot 예시
+│   └── schema/
+│       └── tables.json                   # LLM에 노출할 테이블 정의
+├── outputs/
+│   └── eval_results/                     # SQL 실행 평가 로그
+├── scripts/
+│   ├── build_duckdb.py                   # CSV → DuckDB 적재 및 마트 생성
+│   ├── data_quality_check.py             # 데이터 품질 검증
+│   ├── generate_synthetic_data.py        # e-commerce 합성 데이터 생성
+│   ├── run.ps1                           # CLI 실행
+│   ├── run_api.ps1                       # API 서버 실행
+│   └── run_ui.ps1                        # Streamlit UI 실행
+├── src/copilot/
+│   ├── agents/
+│   │   ├── analyst.py                    # 비즈니스 인사이트 분석
+│   │   ├── insight_engine.py             # 구조화된 인사이트 생성
+│   │   ├── planner.py                    # 질문 의도 분류 및 실행 계획 수립
+│   │   ├── sql_agent.py                  # SQL 생성
+│   │   ├── sql_normalizer.py             # SQL 정규화
+│   │   └── validator.py                  # SQL 유효성 검증 및 retry
+│   ├── context/
+│   │   └── schema_registry.py            # 허용 테이블 스키마 관리
+│   ├── datastore/
+│   │   └── duckdb_client.py              # DuckDB 연결 및 쿼리 실행
+│   ├── evaluation/
+│   │   └── evaluator.py                  # 결과 평가 및 로깅
+│   ├── interfaces/
+│   │   ├── api/                          # FastAPI 앱 (app.py, schemas.py)
+│   │   └── web/                          # Streamlit UI (streamlit_app.py)
+│   ├── pipeline/
+│   │   └── orchestrator.py               # 전체 파이프라인 조율
+│   ├── retrieval/
+│   │   └── retriever.py                  # 메타데이터 기반 few-shot 검색
+│   └── main.py                           # CLI 진입점
+├── .env.example
+├── .gitignore
+├── docker-compose.airflow.yml
+├── README.md
+└── requirements.txt
+```
 
 ---
 
-### System Components
+## 6. Data Pipeline (ETL)
 
-The AI Data Copilot is composed of modular agents that collaborate to execute the analysis workflow.
+```
+generate_synthetic_data.py → data_quality_check.py → build_duckdb.py
+```
 
-| Component | Role |
+| Script | Role |
 |---|---|
-| Planner | Interprets the user question and determines the analysis plan |
-| SQL Agent | Generates SQL queries using schema context |
-| DuckDB Client | Executes SQL queries against the DuckDB data mart |
-| Analyst | Interprets query results |
-| Insight Engine | Generates business insights from the data |
-| Validator | Validates generated SQL queries |
+| `generate_synthetic_data.py` | 사용자 / 상품 / 이벤트 / 주문 합성 데이터 생성 |
+| `data_quality_check.py` | null 검증, 이벤트 타입 검증, 이상 탐지 |
+| `build_duckdb.py` | CSV → DuckDB 적재 및 분석 마트 생성 |
 
-These components are orchestrated by a central controller.
+**생성 테이블**
+
+| Layer | Tables |
+|---|---|
+| raw | `users`, `products`, `events`, `orders` |
+| mart | `mart_daily_revenue`, `mart_funnel_daily` |
 
 ---
 
-### Query Execution Flow
+## 7. Metadata Design
+
+| File | Role |
+|---|---|
+| `tables.json` | LLM에 노출할 테이블 정의 (전체 DB가 아닌 제한된 인터페이스 제공) |
+| `kpi_definitions.json` | KPI ↔ SQL 집계 로직 매핑 |
+| `sql_examples.json` | 자연어 → SQL 패턴 매핑 (few-shot retrieval 역할) |
+
+> **Design Principle**: Schema / KPI / Query pattern을 파일로 분리하여 LLM 자유도를 제한함으로써 hallucination을 최소화하고 안정성을 확보합니다.
+
+---
+
+## 8. AI Copilot Pipeline
+
 ```
 User Question
-↓
-Planner
-↓
-SQL Agent
-↓
-DuckDB Query
-↓
-Analyst
-↓
-Insight Engine
-↓
-Natural Language Insight
+  → Planner        : 질문 의도 분류 및 실행 계획 수립
+  → Retriever       : 메타데이터 기반 few-shot 예시 검색
+  → SchemaRegistry  : 허용 테이블 스키마 조회
+  → SQLAgent        : SQL 생성
+  → SQLNormalizer   : SQL 정규화
+  → Validator       : 유효성 검증 + retry loop
+  → DuckDB          : 쿼리 실행
+  → InsightEngine   : 구조화된 인사이트 추출
+  → Analyst         : 비즈니스 요약 생성
+  → Evaluator       : 결과 평가 및 로깅
 ```
+
+**Key Features**
+- Multi-stage LLM pipeline으로 단일 호출 대비 정확도 향상
+- SQL validation + retry loop으로 오류 자동 복구
+- Metadata-driven generation으로 hallucination 최소화
+- 단계별 구조화된 evaluation logging
 
 ---
 
-### Example Query
+## 9. Execution
 
-User question:
-
-```
-What is the revenue by category today?
-```
-
-Generated SQL:
-
-```sql
-SELECT
-  category,
-  SUM(revenue) AS total_revenue
-FROM mart_daily_revenue
-GROUP BY category
+### CLI
+```powershell
+./scripts/run.ps1
 ```
 
-The system executes the query and returns both:
-
- - structured result table
-
- - natural language insight
-
----
-
-### Schema Context
-
-To improve SQL generation accuracy, the AI agent uses schema metadata stored in:
-
-``` metadata/schema/tables.json ```
-
-This metadata includes:
-
-- table descriptions
-
-- column definitions
-
-- business meanings
-
-Providing schema context enables more accurate SQL generation.
-
----
-### Business Knowledge Context
-
-Business KPI definitions are stored in:
-
-``` metadata/business/kpi_definitions.json ```
-
-This file defines important metrics such as:
-
-- revenue
-
-- order_count
-
-- category revenue
-
-This helps the LLM generate queries aligned with business semantics.
-
-### API Interface
-
-The AI Data Copilot exposes a REST API via FastAPI.
-
-Example endpoint:
-
-``` POST /query ```
-
-### Example request:
-```
-{
-  "question": "Show revenue by category"
-}
-```
-
-Example response:
-```
-{
-  "sql": "SELECT category, SUM(revenue) FROM mart_daily_revenue GROUP BY category",
-  "result": "...",
-  "insight": "Category A generated the highest revenue."
-}
-```
-The response includes:
-
-- generated SQL query
-
-- query execution result
-
-- summarized business insight
-
----
-
-### Web Interface
-
-A Streamlit UI is provided for interactive exploration.
-
-Start the UI:
-
-```
-./scripts/run_ui.ps1
-```
-
-Then open:
-
-```
-http://localhost:8501
-```
-
-Users can ask questions and receive:
-
-- generated SQL queries
-- query results
-- AI-generated insights
----
-
-### Design Goals
-
-The AI Data Copilot demonstrates:
-
-- natural language analytics
-- LLM-driven SQL generation
-- schema-aware query generation
-- modular agent architecture
-- integration with a modern data pipeline
-
-It serves as an intelligent analytical layer on top of the DuckDB data mart.
-
----
-
-## 8. Run the Project
-
-This section explains how to run the full **AI Data Insight Copilot** project locally.
-
-The system consists of:
-
-- Airflow data pipeline
-- DuckDB analytical data mart
-- Superset BI dashboard
-- FastAPI backend
-- Streamlit AI Copilot interface
-
----
-
-### 1. Install Dependencies
-
-First install the required Python packages.
-
-```bash
-pip install -r requirements.txt
-```
-
----
-
-### 2. Generate Synthetic Data
-
-Create sample business data used for analytics.
-
-```
-python scripts/generate_synthetic_data.py
-```
-
-This generates CSV files in:
-
-```
-data/raw/
-```
-
-Example files:
-- users.csv
-- products.csv
-- events.csv
-- orders.csv
-
----
-
-### 3. Build DuckDB Data Mart
-
-Build the analytical database.
-
-```
-python scripts/build_duckdb.py
-```
-
-This creates the DuckDB database:
-
-```
-data/processed/insight.duckdb
-```
-
-The script also generates analytical views:
-- mart_daily_revenue
-- mart_funnel_daily
-
----
-
-### 4. Run Airflow Pipeline
-
-Start the Airflow orchestration environment.
-
-```
-docker compose -f docker-compose.airflow.yml up
-```
-
-Open Airflow UI:
-
-```
-http://localhost:8081
-```
-
-Enable and run the DAG:
-
-```
-daily_data_pipeline
-```
-
-Pipeline tasks:
-1. generate_synthetic_data
-2. data_quality_check
-3. build_duckdb
-
----
-
-### 5. Run Superset Dashboard
-
-Start Superset for BI visualization.
-
-```
-docker compose up
-```
-
-Open Superset:
-
-```
-http://localhost:8088
-```
-
-Connect the DuckDB dataset and open the dashboard.
-
----
-
-### 6. Run FastAPI Server
-
-Start the backend API for the AI Copilot.
-
-```
+### API Server
+```powershell
 ./scripts/run_api.ps1
 ```
 
-API endpoint:
+- Endpoint: `POST /query`
+- URL: `http://127.0.0.1:8000`
 
+**Request**
+```json
+{ "question": "최근 7일 매출 추이" }
 ```
-http://localhost:8000
+
+**Response**
+```json
+{
+  "sql": "...",
+  "summary": "...",
+  "preview": "...",
+  "evaluation_summary": "..."
+}
 ```
 
----
-
-### 7. Run AI Data Copilot UI
-
-Launch the Streamlit interface.
-
-```
+### Web UI (Streamlit)
+```powershell
 ./scripts/run_ui.ps1
 ```
 
-Open the UI:
-
-```
-http://localhost:8501
-```
-
-You can now ask questions such as:
-
-- Show revenue by category
-- What is the daily revenue trend?
-- How many orders were created yesterday?
-
-The system will generate SQL queries, execute them on DuckDB, and return analytical insights.
+SQL 결과, 디버그 정보, 평가 결과를 인터랙티브하게 확인 가능
 
 ---
-### System Overview
 
-```
-Airflow Pipeline
-      ↓
-DuckDB Data Mart
-      ↓
-Superset Dashboard
-      ↓
-AI Data Copilot (FastAPI + Streamlit)
+## 10. Airflow (Orchestration)
+
+```powershell
+docker-compose -f docker-compose.airflow.yml up
 ```
 
-The pipeline automatically generates data, validates it, builds the analytical mart, and exposes it to both BI dashboards and the AI analytics assistant.
+**DAG Flow**
+```
+generate_synthetic_data → data_quality_check → build_duckdb
+```
+
+| Component | Role |
+|---|---|
+| Postgres | Airflow 메타데이터 DB |
+| Airflow Webserver | DAG 모니터링 UI |
+| Airflow Scheduler | DAG 자동 스케줄링 |
+| airflow-init | 초기 환경 설정 |
+
+순차 실행 보장 및 실패 시 downstream 태스크 자동 차단
+
+---
+
+## 11. Why Agent-based Architecture
+
+단일 LLM 호출 방식 대신 multi-stage agent 구조를 선택했습니다.
+
+| Agent | 역할 | 효과 |
+|---|---|---|
+| Planner | 질문 구조화 | SQL 정확도 향상 |
+| Retriever | SQL 패턴 제공 | hallucination 감소 |
+| Validator | 실행 전 검증 | 안전성 확보 |
+| Retry loop | 자동 오류 복구 | 안정성 향상 |
+| Insight Engine | 결과 해석 구조화 | 비즈니스 가치 전달 |
+
+이 구조를 통해 단순 응답 시스템이 아니라 신뢰 가능한 분석 시스템으로 확장할 수 있도록 설계했습니다.
+
+---
+
+## 12. Key Design Decisions
+
+### ✅ Controlled Text2SQL
+
+전체 DB를 LLM에 노출하지 않고 허용된 테이블만 사용하도록 제한했습니다.
+
+이렇게 설계한 이유:
+- 불필요한 JOIN 생성 방지
+- 잘못된 테이블 참조 감소
+- SQL 생성 안정성 확보
+
+### ✅ Multi-stage Pipeline
+
+단일 LLM 호출 대신 `Planner → Validator → Retry` 구조로 설계했습니다.
+
+이렇게 설계한 이유:
+- 단일 호출은 복잡한 질문에서 오류율이 높음
+- 단계별 검증으로 오류를 조기에 감지
+- Retry loop으로 일시적 실패 자동 복구
+
+### ✅ Metadata-driven Design
+
+Schema / KPI / SQL 패턴을 별도 파일로 분리했습니다.
+
+이렇게 설계한 이유:
+- LLM 코드 수정 없이 테이블·KPI 추가 가능
+- 분석 도메인 변경 시 메타데이터만 교체
+- 유지보수 비용 최소화
+
+### ✅ LLM Safety
+
+SQL validation, forbidden query 차단, retry loop을 적용했습니다.
+
+이렇게 설계한 이유:
+- DROP / DELETE 등 위험 쿼리 실행 방지
+- 문법 오류 SQL이 DB에 도달하지 않도록 차단
+- 운영 환경 수준의 안전성 확보
+
+---
+
+## 13. Limitations & Future Work
+
+- [ ] KPI 정의 확장
+- [ ] Vector DB 기반 semantic retrieval 도입
+- [ ] Query 최적화
+- [ ] 실시간 데이터 연동
+- [ ] Monitoring / Alerting 시스템 구축
+
+---
+
+## 14. Screenshots
+
+### Airflow — DAG Pipeline
+> `daily_data_pipeline` DAG의 3단계 순차 실행 및 성공 상태
+
+![Airflow DAG](assets/screenshots/airflow_dag.png)
+
+---
+
+### Streamlit Copilot — Web UI
+
+**① Main Screen** — 자연어 질문 입력 및 예시 질문 제공
+![Streamlit Main](assets/screenshots/streamlit_1_main.png)
+
+**② Analyzing** — 파이프라인 실행 중 상태
+![Streamlit Analyzing](assets/screenshots/streamlit_2_analyzing.png)
+
+**③ SQL Tab** — 자연어로부터 생성된 SQL 확인
+![Streamlit SQL](assets/screenshots/streamlit_3_sql.png)
+
+**④ Result Preview Tab** — 쿼리 실행 결과 테이블
+![Streamlit Result](assets/screenshots/streamlit_4_result.png)
+
+**⑤ Debug Tab** — Planner 분석 결과 및 검증 정보
+![Streamlit Debug](assets/screenshots/streamlit_5_debug.png)
+
+**⑥ Evaluation Tab** — SQL 평가 결과 및 로그 파일 경로
+![Streamlit Eval](assets/screenshots/streamlit_6_eval.png)
+
+**⑦ Summary Tab** — 최종 비즈니스 요약 및 구조화 인사이트
+![Streamlit Summary](assets/screenshots/streamlit_7_summary.png)
+
+---
+
+### Superset — Ecommerce KPI Dashboard
+> Total Revenue / Total Orders / Unique Users KPI 카드, Daily Revenue Trend, Top 5 Categories by Revenue
+
+![Superset Dashboard](assets/screenshots/superset_dashboard.png)
+
+---
+
+## 15. Impact
+
+이 프로젝트를 통해 다음을 달성했습니다.
+
+| 설계 | 효과 |
+|---|---|
+| Validation + Retry 구조 적용 | SQL 실행 실패 자동 복구 → 안정적인 쿼리 실행 보장 |
+| Metadata 기반 schema 제한 | 잘못된 테이블 참조 방지 → hallucination 감소 |
+| Planner 기반 SQL 생성 | 복잡한 질문에도 구조적 대응 가능 |
+| 자연어 입력 인터페이스 | 비개발자도 데이터 조회 가능 → 개발자 의존도 감소 |
+
+결과적으로 단순한 Text2SQL 데모가 아니라 운영 환경에서 활용 가능한 AI 기반 데이터 분석 시스템을 설계했습니다.
+
+---
+
+## 16. Author
+
+**Jina**
