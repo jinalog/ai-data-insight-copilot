@@ -50,6 +50,9 @@ logs/
 data/raw/
 data/processed/
 
+outputs/eval_results/*
+!outputs/eval_results/.gitkeep
+
 # ===============================
 # Superset
 # ===============================

@@ -1,0 +1,165 @@
+# docker-compose.airflow.yml
+
+# 목적
+#   - Airflow 실행 환경을 Docker로 구성
+#   - Postgres + Airflow(Webserver, Scheduler) 포함
+#   - 로컬에서도 동일한 환경으로 DAG 실행 가능
+
+services:
+
+  # -------------------------
+  # 1. Postgres (Airflow 메타데이터 DB)
+  # -------------------------
+  postgres:
+    image: postgres:15
+    container_name: airflow-postgres
+
+    environment:
+      # Airflow가 사용할 DB 계정 정보
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+
+    ports:
+      # 로컬 5433 → 컨테이너 5432
+      # (로컬 Postgres와 충돌 방지)
+      - "5433:5432"
+
+    volumes:
+      # DB 데이터 영속화 (컨테이너 삭제해도 데이터 유지)
+      - airflow_postgres_data:/var/lib/postgresql/data
+
+
+  # -------------------------
+  # 2. Airflow 초기화 (DB + 계정 생성)
+  # -------------------------
+  airflow-init:
+    image: apache/airflow:2.10.2
+    container_name: airflow-init
+
+    depends_on:
+      - postgres  # Postgres 먼저 실행
+
+    environment:
+      # LocalExecutor: 단일 머신에서 병렬 실행 가능
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+
+      # Airflow 메타 DB 연결
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+
+      # 기본 예제 DAG 비활성화
+      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+
+      # 웹서버 보안 키
+      AIRFLOW__WEBSERVER__SECRET_KEY: "airflow-secret-key"
+
+    volumes:
+      # DAG 파일 위치
+      - ./airflow/dags:/opt/airflow/dags
+
+      # 로그 저장
+      - ./airflow/logs:/opt/airflow/logs
+
+      # 플러그인 (사용 안 해도 기본 구조 유지)
+      - ./airflow/plugins:/opt/airflow/plugins
+
+      # 전체 프로젝트 마운트 (중요)
+      # → DAG에서 /opt/project 경로 접근 가능
+      - ./:/opt/project
+
+    command: >
+      bash -c "
+      # Airflow DB 초기화 / 마이그레이션
+      airflow db migrate &&
+
+      # 관리자 계정 생성
+      airflow users create
+        --username admin
+        --firstname Admin
+        --lastname User
+        --role Admin
+        --email admin@example.com
+        --password admin
+      "
+
+
+  # -------------------------
+  # 3. Airflow Webserver
+  # -------------------------
+  airflow-webserver:
+    image: apache/airflow:2.10.2
+    container_name: airflow-webserver
+
+    depends_on:
+      - postgres
+      - airflow-init  # 초기화 완료 후 실행
+
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+      AIRFLOW__WEBSERVER__SECRET_KEY: "airflow-secret-key"
+
+    ports:
+      # Airflow UI 접속 포트
+      # http://localhost:8081
+      - "8081:8080"
+
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/logs:/opt/airflow/logs
+      - ./airflow/plugins:/opt/airflow/plugins
+
+      # 프로젝트 코드 접근 (scripts 실행용)
+      - ./:/opt/project
+
+    command: >
+      bash -c "
+      # 프로젝트 의존성 설치
+      pip install -r /opt/project/requirements.txt &&
+
+      # Airflow 웹 UI 실행
+      airflow webserver
+      "
+
+
+  # -------------------------
+  # 4. Airflow Scheduler
+  # -------------------------
+  airflow-scheduler:
+    image: apache/airflow:2.10.2
+    container_name: airflow-scheduler
+
+    depends_on:
+      - postgres
+      - airflow-init
+
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+      AIRFLOW__WEBSERVER__SECRET_KEY: "airflow-secret-key"
+
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/logs:/opt/airflow/logs
+      - ./airflow/plugins:/opt/airflow/plugins
+
+      # DAG에서 실행하는 scripts 접근용
+      - ./:/opt/project
+
+    command: >
+      bash -c "
+      # 프로젝트 의존성 설치
+      pip install -r /opt/project/requirements.txt &&
+
+      # DAG 스케줄링 및 실행 담당
+      airflow scheduler
+      "
+
+
+# -------------------------
+# Volume 정의
+# -------------------------
+volumes:
+  airflow_postgres_data:
